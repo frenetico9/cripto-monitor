@@ -3,119 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caçador de Memecoins 💎</title>
+    <title>Caçador de Memecoins v2.0 💎</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #0c0a09; /* Cor de fundo mais escura */
         }
-        .animate-pulse-fast {
-            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-            50% {
-                opacity: .5;
-            }
+        .font-mono {
+            font-family: 'Fira Code', monospace;
         }
         .glassmorphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            background: rgba(12, 10, 9, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .highlight-new-buy {
-             background-color: rgba(234, 179, 8, 0.15) !important;
+            background: linear-gradient(90deg, rgba(252, 211, 77, 0.15) 0%, rgba(252, 211, 77, 0.0) 100%) !important;
+            border-left: 3px solid #fcd34d;
         }
-        .highlight-new-buy:hover {
-             background-color: rgba(234, 179, 8, 0.25) !important;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .new-row {
+            animation: fadeIn 0.5s ease-out;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="text-gray-200">
 
-    <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+    <!-- ==== MODAL DE ALERTA ==== -->
+    <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
         <div id="alert-box" class="border-4 rounded-2xl shadow-2xl p-8 max-w-lg w-full transform transition-all duration-300 scale-95">
             <div class="text-center">
-                <svg id="alert-icon" xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto animate-ping" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <!-- Icon path will be set by JS -->
-                </svg>
+                <div id="alert-icon-container" class="relative mx-auto h-20 w-20">
+                    <!-- Ícone estático -->
+                    <svg id="alert-icon-static" xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+                    <!-- Ícone com animação -->
+                    <svg id="alert-icon-animated" xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 absolute opacity-70 animate-ping" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+                </div>
                 <h2 id="alert-title" class="text-4xl font-bold text-white mt-4"></h2>
                 <p id="alert-subtitle" class="text-xl mt-2"></p>
             </div>
-            <div id="alert-content" class="mt-6 text-center bg-gray-800 bg-opacity-50 rounded-lg p-4">
-                <!-- Conteúdo do alerta será inserido aqui -->
-            </div>
-            <button id="alert-close-btn" onclick="closeAlertModal()" class="mt-8 w-full text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                Fechar
-            </button>
+            <div id="alert-content" class="mt-6 text-center bg-black bg-opacity-40 rounded-lg p-4"></div>
+            <button id="alert-close-btn" onclick="closeAlertModal()" class="mt-8 w-full text-white font-bold py-3 px-4 rounded-lg transition duration-300">Fechar</button>
         </div>
     </div>
 
+    <!-- ==== CONTEÚDO PRINCIPAL ==== -->
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-white">💎 Caçador de Memecoins</h1>
-            <p class="text-gray-400 mt-2">Monitore compras de tokens novos/desconhecidos por carteiras de baleias.</p>
-             <p class="text-sm text-amber-400 mt-2">Transações marcadas com 🔥 são de tokens ainda não listados no CoinGecko, um forte indicativo de memecoins ou novos projetos.</p>
+            <h1 class="text-4xl md:text-5xl font-bold text-white">💎 Caçador de Memecoins <span class="text-amber-400">v2.0</span></h1>
+            <p class="text-gray-400 mt-2">Monitore compras de tokens por baleias em <span class="font-bold text-gray-300">ETH, BSC, Arbitrum e Solana</span>.</p>
         </header>
 
+        <!-- ==== PAINEL DE CONTROLE ==== -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Configuration -->
             <div class="lg:col-span-1 glassmorphism rounded-2xl p-6">
                 <h2 class="text-2xl font-bold mb-4 text-white">Configuração</h2>
                 <div class="mb-4">
                     <label for="wallets" class="block text-sm font-medium text-gray-300 mb-2">Carteiras para Monitorar (JSON)</label>
-                    <textarea id="wallets" rows="12" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:ring-2 focus:ring-amber-500 focus:outline-none no-scrollbar"></textarea>
+                    <textarea id="wallets" rows="12" class="w-full bg-black bg-opacity-30 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono text-xs"></textarea>
                 </div>
-                 <div class="mb-4">
-                    <label for="alert-value" class="block text-sm font-medium text-gray-300 mb-2">Valor do Alerta (USD) para Tokens Conhecidos</label>
-                    <input type="number" id="alert-value" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:ring-2 focus:ring-amber-500 focus:outline-none" value="100000">
+                <div class="mb-4">
+                    <label for="alert-value" class="block text-sm font-medium text-gray-300 mb-2">Alerta de Valor (USD) - Tokens Conhecidos</label>
+                    <input type="number" id="alert-value" class="w-full bg-black bg-opacity-30 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 focus:ring-2 focus:ring-amber-500 focus:outline-none" value="100000">
                 </div>
-                <button id="start-btn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                    Iniciar Monitoramento
-                </button>
-                 <button id="stop-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mt-4 hidden">
-                    Parar Monitoramento
-                </button>
+                <button id="start-btn" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-3 px-4 rounded-lg transition duration-300">Iniciar</button>
+                <button id="stop-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mt-4 hidden">Parar</button>
             </div>
 
-            <!-- Status -->
             <div class="lg:col-span-2 glassmorphism rounded-2xl p-6">
-                <h2 class="text-2xl font-bold mb-4 text-white">Status da Conexão</h2>
-                <div id="status-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <!-- Status indicators will be injected here -->
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-white">Status da Conexão</h2>
+                    <p id="last-updated" class="text-sm text-gray-500">Última verificação: --</p>
                 </div>
+                <div id="status-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                <p class="text-xs text-amber-400 mt-6"><span class="font-bold">🔥 NOVO / MEME:</span> Token ainda não listado (ou sem preço) no CoinGecko. Forte indicativo de memecoin ou novo projeto.</p>
             </div>
         </div>
         
-        <!-- Transaction Feed -->
+        <!-- ==== FEED DE TRANSAÇÕES ==== -->
         <div class="glassmorphism rounded-2xl p-6">
              <h2 class="text-2xl font-bold mb-4 text-white">Feed de Transações</h2>
              <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-700">
-                    <thead class="bg-gray-800 bg-opacity-50">
+                <table class="min-w-full">
+                    <thead class="border-b border-gray-700">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Rede</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Data/Hora</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tipo</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Valor (Token)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Valor (USD)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Carteira</th>
-                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Link</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Rede</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tipo</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Valor</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Carteira</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Link</th>
                         </tr>
                     </thead>
-                    <tbody id="transaction-feed" class="bg-gray-900 bg-opacity-50 divide-y divide-gray-800">
+                    <tbody id="transaction-feed" class="divide-y divide-gray-800">
                         <tr id="placeholder-row">
-                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">Aguardando início do monitoramento...</td>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">Aguardando início do monitoramento...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -125,385 +117,386 @@
 
     <script>
         // --- CONFIGURAÇÃO INICIAL ---
-        const walletTextarea = document.getElementById('wallets');
-        const alertValueInput = document.getElementById('alert-value');
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const transactionFeed = document.getElementById('transaction-feed');
-        const placeholderRow = document.getElementById('placeholder-row');
-        const statusContainer = document.getElementById('status-container');
-        // Alert Modal Elements
-        const alertModal = document.getElementById('alert-modal');
-        const alertBox = document.getElementById('alert-box');
-        const alertIcon = document.getElementById('alert-icon');
-        const alertTitle = document.getElementById('alert-title');
-        const alertSubtitle = document.getElementById('alert-subtitle');
-        const alertContent = document.getElementById('alert-content');
-        const alertCloseBtn = document.getElementById('alert-close-btn');
-
-
-        const initialWallets = {
-          "eth": [
-            "0xF977814e90dA44b7ABCAbe529a459703075212d3", // Binance 8
-            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // Wrapped Ether (WETH)
-            "0x267612d9a1e0595e011a3645b25a331165a60368"  // Kraken 13
-          ],
-          "bsc": [
-            "0xF8B089224424A9560B54333621024044952404Fe", // Binance Wallet
-            "0x1b81D678ffb9C0263b24A97847620C99d213eB14", // PancakeSwap V3: Router
-            "0x55d398326f99059fF775485246999027B3197955"  // BUSD-T Stablecoin
-          ],
-          "arbitrum": [
-            "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // Arbitrum One: Bridge
-            "0x321F653eED006AD1C29D174e17d96351BDe22649", // GMX: GLP Manager
-            "0x617b3a3528f9e957455c1e87a89e4c1a8b1b42d2"  // Multichain: Router
-          ]
+        const UIElements = {
+            walletTextarea: document.getElementById('wallets'),
+            alertValueInput: document.getElementById('alert-value'),
+            startBtn: document.getElementById('start-btn'),
+            stopBtn: document.getElementById('stop-btn'),
+            transactionFeed: document.getElementById('transaction-feed'),
+            placeholderRow: document.getElementById('placeholder-row'),
+            statusContainer: document.getElementById('status-container'),
+            lastUpdated: document.getElementById('last-updated'),
+            alert: {
+                modal: document.getElementById('alert-modal'),
+                box: document.getElementById('alert-box'),
+                iconStatic: document.getElementById('alert-icon-static'),
+                iconAnimated: document.getElementById('alert-icon-animated'),
+                title: document.getElementById('alert-title'),
+                subtitle: document.getElementById('alert-subtitle'),
+                content: document.getElementById('alert-content'),
+                closeBtn: document.getElementById('alert-close-btn')
+            }
         };
 
-        walletTextarea.value = JSON.stringify(initialWallets, null, 2);
+        const initialWallets = {
+          "eth": ["0x281055afc982d96fab65b3a49cac8b878184cb16", "0x73BCEb1Cd57C711feCac4A234270bC2233e29541"],
+          "bsc": ["0xF8B089224424A9560B54333621024044952404Fe", "0x1b81D678ffb9C0263b24A97847620C99d213eB14"],
+          "arbitrum": ["0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", "0x321F653eED006AD1C29D174e17d96351BDe22649"],
+          "solana": ["5Z3tDKGPd3GNQJUaA6aC3TctEWw49f4o4n2N81sYv1B3", "Cpw15a4f1m2na95g2ZJj3aD6gUTVcaD2s2xxdkp5qW5d"]
+        };
+
+        UIElements.walletTextarea.value = JSON.stringify(initialWallets, null, 2);
 
         const networkConfig = {
             eth: { name: 'Ethereum', symbol: 'ETH', coingeckoId: 'ethereum', explorer: 'https://etherscan.io/tx/', rpc: 'https://eth.llamarpc.com' },
             bsc: { name: 'BSC', symbol: 'BNB', coingeckoId: 'binancecoin', explorer: 'https://bscscan.com/tx/', rpc: 'https://bsc-dataseed.binance.org/' },
-            arbitrum: { name: 'Arbitrum', symbol: 'ETH', coingeckoId: 'ethereum', explorer: 'https://arbiscan.io/tx/', rpc: 'https://arb1.arbitrum.io/rpc' }
+            arbitrum: { name: 'Arbitrum', symbol: 'ETH', coingeckoId: 'ethereum', explorer: 'https://arbiscan.io/tx/', rpc: 'https://arb1.arbitrum.io/rpc' },
+            solana: { name: 'Solana', symbol: 'SOL', coingeckoId: 'solana', explorer: 'https://solscan.io/tx/', rpc: 'https://api.mainnet-beta.solana.com' }
         };
 
         let pollingIntervals = {};
-        let lastProcessedBlock = {};
-        let monitoredWallets = new Set();
-        const MAX_FEED_ITEMS = 50;
+        let evmState = { lastProcessedBlock: {} };
+        let solanaState = { lastSignatures: {} };
+        let monitoredWallets = { evm: new Set(), solana: new Set() };
+        const MAX_FEED_ITEMS = 100;
         const priceCache = new Map();
-        const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+        const CACHE_TTL = 5 * 60 * 1000;
 
         // --- LÓGICA PRINCIPAL ---
+        UIElements.startBtn.addEventListener('click', startMonitoring);
+        UIElements.stopBtn.addEventListener('click', stopMonitoring);
 
-        startBtn.addEventListener('click', () => {
-            placeholderRow.classList.add('hidden');
-            transactionFeed.innerHTML = '';
-            statusContainer.innerHTML = '';
-            startBtn.classList.add('hidden');
-            stopBtn.classList.remove('hidden');
+        function startMonitoring() {
+            UIElements.placeholderRow.classList.add('hidden');
+            UIElements.transactionFeed.innerHTML = '';
+            UIElements.statusContainer.innerHTML = '';
+            UIElements.startBtn.classList.add('hidden');
+            UIElements.stopBtn.classList.remove('hidden');
             
             let walletsToMonitor;
             try {
-                walletsToMonitor = JSON.parse(walletTextarea.value);
+                walletsToMonitor = JSON.parse(UIElements.walletTextarea.value);
             } catch (error) {
                 alert('O JSON das carteiras é inválido.');
-                startBtn.classList.remove('hidden');
-                stopBtn.classList.add('hidden');
+                stopMonitoring();
                 return;
             }
             
-            stopMonitoring(); 
+            stopAllPollers();
 
-            monitoredWallets.clear();
-            Object.values(walletsToMonitor).flat().forEach(addr => monitoredWallets.add(addr.toLowerCase()));
+            monitoredWallets.evm.clear();
+            monitoredWallets.solana.clear();
+
+            Object.entries(walletsToMonitor).forEach(([network, addresses]) => {
+                if (network === 'solana') {
+                    addresses.forEach(addr => monitoredWallets.solana.add(addr));
+                } else {
+                    addresses.forEach(addr => monitoredWallets.evm.add(addr.toLowerCase()));
+                }
+            });
             
             for (const network in walletsToMonitor) {
                 if (networkConfig[network] && walletsToMonitor[network].length > 0) {
                     createStatusIndicator(network, 'idle', 'Iniciando...');
-                    lastProcessedBlock[network] = null;
-                    pollNetwork(network); 
-                    pollingIntervals[network] = setInterval(() => pollNetwork(network), 15000);
+                    if (network === 'solana') {
+                        walletsToMonitor[network].forEach(addr => solanaState.lastSignatures[addr] = null);
+                        pollSolanaNetwork(network, walletsToMonitor[network]);
+                        pollingIntervals[network] = setInterval(() => pollSolanaNetwork(network, walletsToMonitor[network]), 20000);
+                    } else {
+                        evmState.lastProcessedBlock[network] = null;
+                        pollEvmNetwork(network);
+                        pollingIntervals[network] = setInterval(() => pollEvmNetwork(network), 15000);
+                    }
                 }
             }
-        });
-
-        stopBtn.addEventListener('click', stopMonitoring);
+        }
 
         function stopMonitoring() {
-            Object.keys(pollingIntervals).forEach(network => {
-                clearInterval(pollingIntervals[network]);
-                updateStatusIndicator(network, 'disconnected', 'Parado');
-            });
+            stopAllPollers();
+            UIElements.startBtn.classList.remove('hidden');
+            UIElements.stopBtn.classList.add('hidden');
+        }
+
+        function stopAllPollers() {
+            Object.values(pollingIntervals).forEach(clearInterval);
             pollingIntervals = {};
-            startBtn.classList.remove('hidden');
-            stopBtn.classList.add('hidden');
+            Object.keys(networkConfig).forEach(network => updateStatusIndicator(network, 'disconnected', 'Parado'));
         }
 
-        async function pollNetwork(network) {
-            updateStatusIndicator(network, 'connecting', 'Buscando blocos...');
-            try {
-                const latestBlockNum = parseInt(await rpcRequest(network, 'eth_blockNumber', []), 16);
-
-                if (lastProcessedBlock[network] === null) {
-                    lastProcessedBlock[network] = latestBlockNum - 1;
-                }
-                
-                if (latestBlockNum > lastProcessedBlock[network]) {
-                    updateStatusIndicator(network, 'connected', `Analisando blocos ${lastProcessedBlock[network] + 1} a ${latestBlockNum}`);
-                    for (let i = lastProcessedBlock[network] + 1; i <= latestBlockNum; i++) {
-                        const block = await rpcRequest(network, 'eth_getBlockByNumber', ['0x' + i.toString(16), true]);
-                        if (block && block.transactions) {
-                            for (const tx of block.transactions) {
-                                await processTransaction(tx, network);
-                            }
-                        }
-                    }
-                    lastProcessedBlock[network] = latestBlockNum;
-                }
-                 setTimeout(() => updateStatusIndicator(network, 'connected', 'Aguardando novos blocos...'), 2000);
-            } catch (error) {
-                console.error(`[${network.toUpperCase()}] Erro durante o polling:`, error);
-                updateStatusIndicator(network, 'error', 'Erro na conexão RPC');
-            }
-        }
-        
-        async function rpcRequest(network, method, params) {
-            const url = networkConfig[network].rpc;
+        async function rpcRequest(url, method, params, id = 1) {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+                body: JSON.stringify({ jsonrpc: '2.0', id, method, params })
             });
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
             const data = await response.json();
             if (data.error) throw new Error(`RPC Error: ${data.error.message}`);
             return data.result;
         }
 
-        async function processTransaction(tx, network) {
+        // --- LÓGICA EVM ---
+        async function pollEvmNetwork(network) {
+            updateStatusIndicator(network, 'connecting', 'Buscando blocos...');
             try {
-                if (!tx || !tx.from) return;
-                
-                const fromAddr = tx.from.toLowerCase();
-                const toAddr = tx.to ? tx.to.toLowerCase() : null;
+                const url = networkConfig[network].rpc;
+                const latestBlockNum = parseInt(await rpcRequest(url, 'eth_blockNumber', []), 16);
 
-                let relevantWallet = null;
-                let type = null;
-
-                if (monitoredWallets.has(fromAddr)) {
-                    relevantWallet = fromAddr;
-                    type = 'SAÍDA';
-                } else if (toAddr && monitoredWallets.has(toAddr)) {
-                    relevantWallet = toAddr;
-                    type = 'ENTRADA';
+                if (evmState.lastProcessedBlock[network] === null) {
+                    evmState.lastProcessedBlock[network] = latestBlockNum - 1;
                 }
-
-                if (!relevantWallet) return;
                 
-                let isUnknownToken = false;
-
-                if (tx.input && tx.input.startsWith('0xa9059cbb') && toAddr) { // ERC20 transfer
-                    const tokenContract = toAddr;
-                    const amountHex = '0x' + tx.input.substring(74);
-                    
-                    const [symbol, decimals] = await getTokenInfo(tokenContract, network);
-                    if (decimals === 0 && symbol === '???') return;
-                    
-                    const amount = parseFloat(BigInt(amountHex)) / (10 ** decimals);
-                    const priceResult = await getPrice(network, tokenContract, symbol);
-                    isUnknownToken = priceResult.isUnknown;
-                    const usdValue = amount * priceResult.price;
-                    
-                    const txData = { network, txHash: tx.hash, type, wallet: relevantWallet, tokenSymbol: symbol, tokenValue: amount, usdValue, isUnknown: isUnknownToken };
-                    displayTransaction(txData);
-                    checkAlerts(txData);
-
-                } else if (tx.value && BigInt(tx.value) > 0) { // Native transfer
-                    const decimals = 18;
-                    const amount = parseFloat(BigInt(tx.value)) / (10 ** decimals);
-                    const { symbol, coingeckoId } = networkConfig[network];
-                    const priceResult = await getPrice(coingeckoId);
-                    const usdValue = amount * priceResult.price;
-                    
-                    const txData = { network, txHash: tx.hash, type, wallet: relevantWallet, tokenSymbol: symbol, tokenValue: amount, usdValue, isUnknown: false };
-                    displayTransaction(txData);
-                    checkAlerts(txData);
+                if (latestBlockNum > evmState.lastProcessedBlock[network]) {
+                    for (let i = evmState.lastProcessedBlock[network] + 1; i <= latestBlockNum; i++) {
+                        const block = await rpcRequest(url, 'eth_getBlockByNumber', ['0x' + i.toString(16), true]);
+                        if (block?.transactions) {
+                            for (const tx of block.transactions) await processEvmTransaction(tx, network);
+                        }
+                    }
+                    evmState.lastProcessedBlock[network] = latestBlockNum;
                 }
+                updateStatusIndicator(network, 'connected', 'Monitorando...');
+                updateTimestamp();
             } catch (error) {
-                console.error(`Falha ao processar a transação ${tx.hash} na rede ${network}:`, error);
+                console.error(`[${network.toUpperCase()}] Erro no polling EVM:`, error);
+                updateStatusIndicator(network, 'error', 'Erro na conexão');
             }
         }
+
+        async function processEvmTransaction(tx, network) {
+            if (!tx?.from) return;
+            const fromAddr = tx.from.toLowerCase();
+            const toAddr = tx.to ? tx.to.toLowerCase() : null;
+            let relevantWallet = null, type = null;
+
+            if (monitoredWallets.evm.has(fromAddr)) { relevantWallet = fromAddr; type = 'SAÍDA'; }
+            else if (toAddr && monitoredWallets.evm.has(toAddr)) { relevantWallet = toAddr; type = 'ENTRADA'; }
+            if (!relevantWallet) return;
+
+            let txData;
+            if (tx.input?.startsWith('0xa9059cbb') && toAddr) { // ERC20
+                const [symbol, decimals] = await getTokenInfo(toAddr, network);
+                if (decimals === 0 && symbol === '???') return;
+                const amount = parseFloat(BigInt('0x' + tx.input.substring(74))) / (10 ** decimals);
+                const priceResult = await getPrice(network, toAddr, symbol);
+                txData = { network, txHash: tx.hash, type, wallet: relevantWallet, tokenSymbol: symbol, tokenValue: amount, usdValue: amount * priceResult.price, isUnknown: priceResult.isUnknown, tokenAddress: toAddr };
+            } else if (tx.value && BigInt(tx.value) > 0) { // Nativo
+                const amount = parseFloat(BigInt(tx.value)) / (10 ** 18);
+                const { symbol, coingeckoId } = networkConfig[network];
+                const priceResult = await getPrice(coingeckoId);
+                txData = { network, txHash: tx.hash, type, wallet: relevantWallet, tokenSymbol: symbol, tokenValue: amount, usdValue: amount * priceResult.price, isUnknown: false, tokenAddress: 'NATIVE' };
+            }
+            if (txData) { displayTransaction(txData); checkAlerts(txData); }
+        }
         
+        // --- LÓGICA SOLANA ---
+        async function pollSolanaNetwork(network, addresses) {
+            updateStatusIndicator(network, 'connecting', 'Buscando txs...');
+            try {
+                for (const address of addresses) {
+                    const signatures = await rpcRequest(networkConfig.solana.rpc, 'getSignaturesForAddress', [address, { limit: 25, until: solanaState.lastSignatures[address] }]);
+                    if (signatures?.length > 0) {
+                        const newLastSignature = signatures[0].signature;
+                        const txs = await rpcRequest(networkConfig.solana.rpc, 'getParsedTransactions', [signatures.map(s => s.signature), {"maxSupportedTransactionVersion": 0}]);
+                        for (const tx of txs) {
+                            if (tx) await processSolanaTransaction(tx, address);
+                        }
+                        solanaState.lastSignatures[address] = newLastSignature;
+                    }
+                }
+                updateStatusIndicator(network, 'connected', 'Monitorando...');
+                updateTimestamp();
+            } catch (error) {
+                console.error(`[SOLANA] Erro no polling:`, error);
+                updateStatusIndicator(network, 'error', 'Erro na conexão');
+            }
+        }
+
+        async function processSolanaTransaction(tx, monitoredAddress) {
+            if (tx.meta?.err) return;
+
+            const findWallet = (addr) => monitoredWallets.solana.has(addr);
+            const accountKeys = tx.transaction.message.accountKeys.map(acc => acc.pubkey);
+            
+            const preBalances = tx.meta.preTokenBalances || [];
+            const postBalances = tx.meta.postTokenBalances || [];
+            const allBalances = [...preBalances, ...postBalances].filter((val, idx, self) => self.findIndex(t => t.mint === val.mint && t.owner === val.owner) === idx);
+
+            for (const balance of allBalances) {
+                const pre = preBalances.find(p => p.mint === balance.mint && p.owner === balance.owner)?.uiTokenAmount.uiAmount || 0;
+                const post = postBalances.find(p => p.mint === balance.mint && p.owner === balance.owner)?.uiTokenAmount.uiAmount || 0;
+                const change = post - pre;
+
+                if (change !== 0 && balance.owner === monitoredAddress) {
+                    const priceResult = await getPrice('solana', balance.mint);
+                    const txData = {
+                        network: 'solana', txHash: tx.transaction.signatures[0],
+                        type: change > 0 ? 'ENTRADA' : 'SAÍDA',
+                        wallet: balance.owner, tokenSymbol: priceResult.symbol || balance.mint.slice(0, 6),
+                        tokenValue: Math.abs(change), usdValue: Math.abs(change) * priceResult.price,
+                        isUnknown: priceResult.isUnknown, tokenAddress: balance.mint
+                    };
+                    displayTransaction(txData);
+                    checkAlerts(txData);
+                }
+            }
+        }
+
+        // --- FUNÇÕES COMPARTILHADAS ---
         const tokenInfoCache = new Map();
         async function getTokenInfo(contractAddress, network) {
             if (tokenInfoCache.has(contractAddress)) return tokenInfoCache.get(contractAddress);
              try {
-                const symbolData = '0x95d89b41';
-                const decimalsData = '0x313ce567';
-
-                const symbolHex = await rpcRequest(network, 'eth_call', [{ to: contractAddress, data: symbolData }, 'latest']);
-                const decimalsHex = await rpcRequest(network, 'eth_call', [{ to: contractAddress, data: decimalsData }, 'latest']);
-
+                const url = networkConfig[network].rpc;
+                const symbolHex = await rpcRequest(url, 'eth_call', [{ to: contractAddress, data: '0x95d89b41' }, 'latest']);
+                const decimalsHex = await rpcRequest(url, 'eth_call', [{ to: contractAddress, data: '0x313ce567' }, 'latest']);
                 const symbol = hexToString(symbolHex);
                 const decimals = (decimalsHex && decimalsHex !== '0x') ? parseInt(decimalsHex, 16) : 0;
-                
-                if (symbol && !isNaN(decimals)) {
-                    const result = [symbol, decimals];
-                    tokenInfoCache.set(contractAddress, result);
-                    return result;
-                }
+                const result = [symbol || '???', decimals];
+                if (symbol) tokenInfoCache.set(contractAddress, result);
+                return result;
              } catch (e) {
-                 console.warn(`Não foi possível buscar informações do token ${contractAddress}.`, e);
+                return ['???', 0];
              }
-             return ['???', 0];
         }
-
         function hexToString(hex) {
-            if (!hex || hex === '0x') return '???';
+            if (!hex || hex === '0x') return '';
             let str = '';
             const cleanHex = hex.startsWith('0x') ? hex.substring(2) : hex;
-            for (let i = 0; i < cleanHex.length; i += 2) {
-                const charCode = parseInt(cleanHex.substr(i, 2), 16);
-                if (charCode > 31 && charCode < 127) {
-                    str += String.fromCharCode(charCode);
-                }
+            for (let i = 0; i < cleanHex.length && cleanHex.substr(i, 2) !== '00'; i += 2) {
+                str += String.fromCharCode(parseInt(cleanHex.substr(i, 2), 16));
             }
-            return str.replace(/\u0000/g, '').trim();
+            return str.replace(/[^a-zA-Z0-9-]/g, '').trim();
         }
 
-        async function getPrice(assetId, contractAddress = null, symbol = null) {
-            const cacheKey = contractAddress || assetId;
+        async function getPrice(platformId, contractAddress = null) {
+            const cacheKey = contractAddress || platformId;
             const cached = priceCache.get(cacheKey);
-            if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-                return cached.data;
-            }
+            if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) return cached.data;
 
             try {
-                let url;
-                if (contractAddress && (assetId === 'bsc' || assetId === 'arbitrum' || assetId === 'eth')) {
-                     const platformId = assetId === 'eth' ? 'ethereum' : assetId === 'bsc' ? 'binance-smart-chain' : 'arbitrum-one';
-                     url = `https://api.coingecko.com/api/v3/simple/token_price/${platformId}?contract_addresses=${contractAddress}&vs_currencies=usd`;
-                } else {
-                     url = `https://api.coingecko.com/api/v3/simple/price?ids=${assetId}&vs_currencies=usd`;
-                }
-                
+                const geckoPlatformId = platformId === 'bsc' ? 'binance-smart-chain' : platformId === 'eth' ? 'ethereum' : platformId;
+                const url = contractAddress 
+                    ? `https://api.coingecko.com/api/v3/simple/token_price/${geckoPlatformId}?contract_addresses=${contractAddress}&vs_currencies=usd`
+                    : `https://api.coingecko.com/api/v3/simple/price?ids=${geckoPlatformId}&vs_currencies=usd`;
+
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`CoinGecko API request failed: ${response.statusText}`);
+                if (!response.ok) throw new Error(`CoinGecko API request failed`);
                 const data = await response.json();
                 
-                let price = 0;
-                let isUnknown = true;
-
-                if (contractAddress && data[contractAddress.toLowerCase()] && data[contractAddress.toLowerCase()].usd) {
-                    price = data[contractAddress.toLowerCase()].usd;
-                    isUnknown = false;
-                } else if (!contractAddress && data[assetId] && data[assetId].usd) {
-                    price = data[assetId].usd;
-                    isUnknown = false;
+                const key = contractAddress ? contractAddress.toLowerCase() : platformId;
+                if (data[key]?.usd !== undefined) {
+                    const result = { price: data[key].usd, isUnknown: false };
+                    priceCache.set(cacheKey, { data: result, timestamp: Date.now() });
+                    return result;
                 }
-                
-                const result = { price, isUnknown };
-                priceCache.set(cacheKey, { data: result, timestamp: Date.now() });
-                return result;
             } catch (error) {
-                console.error(`Erro ao buscar preço para ${assetId}/${symbol}:`, error);
-                return { price: 0, isUnknown: true };
+                console.warn(`Preço não encontrado para ${cacheKey}:`, error.message);
             }
+            // Se falhar ou não encontrar, retorna desconhecido
+            const result = { price: 0, isUnknown: true };
+            priceCache.set(cacheKey, { data: result, timestamp: Date.now() }); // Cache do resultado "desconhecido"
+            return result;
         }
 
+        // --- LÓGICA DE UI ---
         function displayTransaction(txData) {
-            const { network, txHash, type, wallet, tokenSymbol, tokenValue, usdValue, isUnknown } = txData;
+            const { network, txHash, type, wallet, tokenSymbol, tokenValue, usdValue, isUnknown, tokenAddress } = txData;
             
             const row = document.createElement('tr');
             const isNewBuy = isUnknown && type === 'ENTRADA';
-            row.className = `transition duration-150 ${isNewBuy ? 'highlight-new-buy' : 'hover:bg-gray-700'}`;
+            row.className = `new-row ${isNewBuy ? 'highlight-new-buy' : ''}`;
             
             const typeClass = type === 'ENTRADA' ? 'text-green-400' : 'text-red-400';
-            const typeIcon = type === 'ENTRADA' ? '↓' : '↑';
+            const typeIcon = type === 'ENTRADA' ? '→' : '←';
+            const explorerUrl = networkConfig[network].explorer;
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-center">${isUnknown ? '<span class="text-lg" title="Token Novo / Desconhecido">🔥</span>' : ''}</td>
-                <td class="px-6 py-4 whitespace-nowrap"><div class="flex items-center"><div class="w-3 h-3 rounded-full mr-2 ${network === 'eth' ? 'bg-indigo-400' : network === 'bsc' ? 'bg-yellow-400' : 'bg-blue-400'}"></div><span class="font-semibold">${networkConfig[network].name}</span></div></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date().toLocaleString('pt-BR')}</td>
-                <td class="px-6 py-4 whitespace-nowrap font-bold ${typeClass}">${typeIcon} ${type}</td>
-                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-white">${tokenValue.toLocaleString('pt-BR', { maximumFractionDigits: 4 })} ${tokenSymbol}</div></td>
-                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-bold text-white">${isUnknown ? 'N/A' : '$' + usdValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono" title="${wallet}">${wallet.substring(0, 6)}...${wallet.substring(wallet.length - 4)}</td>
-                <td class="px-6 py-4 whitespace-nowrap"><a href="${networkConfig[network].explorer}${txHash}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300">Ver &#x2197;</a></td>
+                <td class="px-4 py-3 text-center">${isUnknown ? '<span class="text-lg" title="Token Novo / Desconhecido">🔥</span>' : '<span class="text-gray-600">-</span>'}</td>
+                <td class="px-4 py-3"><div class="flex items-center gap-2"><img src="https://cryptologos.cc/logos/${networkConfig[network].name.toLowerCase()}-${networkConfig[network].symbol.toLowerCase()}-logo.svg?v=032" onerror="this.style.display='none'" class="h-5 w-5"><span class="font-semibold">${networkConfig[network].name}</span></div></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">${new Date().toLocaleTimeString('pt-BR')}</td>
+                <td class="px-4 py-3 whitespace-nowrap font-bold ${typeClass}">${typeIcon} ${type}</td>
+                <td class="px-4 py-3">
+                    <div class="font-bold text-white">${tokenValue.toLocaleString('pt-BR', { maximumFractionDigits: 4 })} ${tokenSymbol}</div>
+                    <div class="text-xs text-gray-400">${isUnknown ? 'Valor USD desconhecido' : '$' + usdValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-400 font-mono" title="${wallet}">${wallet.substring(0, 6)}...${wallet.substring(wallet.length - 4)}</td>
+                <td class="px-4 py-3 text-center"><a href="${explorerUrl}${txHash}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 font-mono text-xs">Ver ↗</a></td>
             `;
 
-            transactionFeed.prepend(row);
-
-            if (transactionFeed.children.length > MAX_FEED_ITEMS) {
-                transactionFeed.removeChild(transactionFeed.lastChild);
+            UIElements.transactionFeed.prepend(row);
+            if (UIElements.transactionFeed.children.length > MAX_FEED_ITEMS) {
+                UIElements.transactionFeed.removeChild(UIElements.transactionFeed.lastChild);
             }
         }
 
         function checkAlerts(txData) {
-            // Alert for new/meme token buy
             if (txData.isUnknown && txData.type === 'ENTRADA') {
-                triggerNewTokenAlert(txData);
-                return; // Prioritize new token alert
+                triggerAlert('new_token', txData);
+                return;
             }
-            // Alert for high value transaction
-            const alertValue = parseFloat(alertValueInput.value) || 100000;
-            if (txData.usdValue >= alertValue) {
-                triggerWhaleAlert(txData);
+            const alertValue = parseFloat(UIElements.alertValueInput.value) || 100000;
+            if (!txData.isUnknown && txData.usdValue >= alertValue) {
+                triggerAlert('whale', txData);
             }
         }
         
-        function triggerWhaleAlert(txData) {
-            setupAlertModal('whale', txData);
-            const synth = new Tone.Synth({ oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.5 } }).toDestination();
-            synth.triggerAttackRelease("C4", "8n", Tone.now());
-        }
-
-        function triggerNewTokenAlert(txData) {
-            setupAlertModal('new_token', txData);
-            const synth = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 10, detune: 0, oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.01, sustain: 1, release: 0.5 }, modulation: { type: "square" }, modulationEnvelope: { attack: 0.5, decay: 0, sustain: 1, release: 0.5 } }).toDestination();
-            synth.triggerAttackRelease("C5", "4n", Tone.now());
-        }
-
-        function setupAlertModal(type, txData) {
-            const { network, tokenSymbol, tokenValue, usdValue, wallet } = txData;
-            
+        function triggerAlert(type, txData) {
             const configs = {
                 whale: {
-                    borderColor: 'border-red-500', bgColor: 'bg-red-900', btnColor: 'bg-red-600', hoverBtnColor: 'hover:bg-red-700',
-                    iconPath: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728m2.828 9.9a5 5 0 010-7.072" />',
-                    iconColor: 'text-red-400',
-                    title: 'ALERTA DE BALEIA!',
-                    subtitle: 'Movimentação de alto valor detectada!',
-                    subtitleColor: 'text-red-200',
-                    content: `<p class="text-3xl font-bold text-white my-2">$${usdValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p><p class="text-lg text-gray-300">Em <strong class="text-white">${tokenValue.toLocaleString('pt-BR', { maximumFractionDigits: 4 })} ${tokenSymbol}</strong></p>`
+                    borderColor: 'border-red-500', bgColor: 'bg-red-900/80', btnColor: 'bg-red-600', hoverBtnColor: 'hover:bg-red-700',
+                    iconPath: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728m2.828 9.9a5 5 0 010-7.072" />', iconColor: 'text-red-400',
+                    title: 'ALERTA DE BALEIA!', subtitle: 'Movimentação de alto valor detectada!', subtitleColor: 'text-red-200'
                 },
                 new_token: {
-                    borderColor: 'border-amber-400', bgColor: 'bg-amber-900', btnColor: 'bg-amber-600', hoverBtnColor: 'hover:bg-amber-700',
-                    iconPath: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l-3 3m6 0l-3 3M5 21v-4m-2 2h4m11-5l-8 8-4-4 1.5-1.5L9 16.5l6.5-6.5L17 11z" />',
-                    iconColor: 'text-amber-300',
-                    title: '💎 NOVO TOKEN DETECTADO!',
-                    subtitle: 'Baleia adquiriu um token desconhecido!',
-                    subtitleColor: 'text-amber-200',
-                    content: `<p class="text-3xl font-bold text-white my-2">${tokenValue.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} ${tokenSymbol}</p><p class="text-lg text-gray-300">O valor em USD é desconhecido.</p>`
+                    borderColor: 'border-amber-400', bgColor: 'bg-amber-900/80', btnColor: 'bg-amber-600', hoverBtnColor: 'hover:bg-amber-700',
+                    iconPath: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l-3 3m6 0l-3 3M5 21v-4m-2 2h4m11-5l-8 8-4-4 1.5-1.5L9 16.5l6.5-6.5L17 11z" />', iconColor: 'text-amber-300',
+                    title: '💎 NOVO TOKEN DETECTADO!', subtitle: 'Baleia adquiriu um token desconhecido!', subtitleColor: 'text-amber-200'
                 }
             };
-
             const config = configs[type];
-            const txType = txData.type;
-            const typeClass = txType === 'ENTRADA' ? 'text-green-300' : 'text-red-300';
+            const { network, tokenSymbol, tokenValue, usdValue, wallet, type: txType, isUnknown } = txData;
             
-            alertBox.className = `border-4 rounded-2xl shadow-2xl p-8 max-w-lg w-full transform transition-all duration-300 scale-95 ${config.borderColor} ${config.bgColor}`;
-            alertCloseBtn.className = `mt-8 w-full text-white font-bold py-3 px-4 rounded-lg transition duration-300 ${config.btnColor} ${config.hoverBtnColor}`;
-            alertIcon.innerHTML = config.iconPath;
-            alertIcon.className = `h-20 w-20 mx-auto animate-ping ${config.iconColor}`;
-            alertTitle.textContent = config.title;
-            alertSubtitle.textContent = config.subtitle;
-            alertSubtitle.className = `text-xl mt-2 ${config.subtitleColor}`;
+            UIElements.alert.box.className = `border-4 rounded-2xl shadow-2xl p-8 max-w-lg w-full transform transition-all duration-300 scale-95 ${config.borderColor} ${config.bgColor}`;
+            UIElements.alert.closeBtn.className = `mt-8 w-full text-black font-bold py-3 px-4 rounded-lg transition duration-300 ${config.btnColor} ${config.hoverBtnColor}`;
+            UIElements.alert.iconStatic.innerHTML = config.iconPath;
+            UIElements.alert.iconAnimated.innerHTML = config.iconPath;
+            UIElements.alert.iconStatic.className = `h-20 w-20 absolute ${config.iconColor}`;
+            UIElements.alert.iconAnimated.className = `h-20 w-20 absolute opacity-70 animate-ping ${config.iconColor}`;
+            UIElements.alert.title.textContent = config.title;
+            UIElements.alert.subtitle.className = `text-xl mt-2 ${config.subtitleColor}`;
+            UIElements.alert.subtitle.textContent = config.subtitle;
 
-            alertContent.innerHTML = `
-                ${config.content}
-                <p class="text-sm text-gray-400 font-mono mt-4">
-                    <strong class="${typeClass}">${txType}</strong> na rede ${networkConfig[network].name}<br>Carteira: ${wallet}
-                </p>
-            `;
+            const contentValue = isUnknown
+                ? `<p class="text-3xl font-bold text-white my-2">${tokenValue.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} ${tokenSymbol}</p>`
+                : `<p class="text-3xl font-bold text-white my-2">$${usdValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`;
             
-            alertModal.classList.remove('hidden');
-            alertBox.classList.add('scale-100');
+            UIElements.alert.content.innerHTML = `${contentValue}<p class="text-sm text-gray-400 font-mono mt-4"><strong class="${txType === 'ENTRADA' ? 'text-green-300' : 'text-red-300'}">${txType}</strong> na rede ${networkConfig[network].name}<br>Carteira: ${wallet}</p>`;
+
+            UIElements.alert.modal.classList.remove('hidden');
+            UIElements.alert.box.classList.add('scale-100');
+            
+            if (type === 'whale') new Tone.Synth({ oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.5 } }).toDestination().triggerAttackRelease("C4", "8n", Tone.now());
+            if (type === 'new_token') new Tone.FMSynth({ harmonicity: 3, modulationIndex: 10, oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.01, sustain: 1, release: 0.5 } }).toDestination().triggerAttackRelease("C5", "4n", Tone.now());
         }
-
 
         function closeAlertModal() {
-            alertBox.classList.remove('scale-100');
-            setTimeout(() => { alertModal.classList.add('hidden'); }, 300);
+            UIElements.alert.box.classList.remove('scale-100');
+            setTimeout(() => { UIElements.alert.modal.classList.add('hidden'); }, 300);
         }
 
-        // --- FUNÇÕES DE UI ---
+        function updateTimestamp() {
+            UIElements.lastUpdated.textContent = `Última verificação: ${new Date().toLocaleTimeString('pt-BR')}`;
+        }
         
         function createStatusIndicator(network, status, message) {
-            const indicator = document.createElement('div');
-            indicator.id = `status-${network}`;
-            statusContainer.appendChild(indicator);
+            const container = document.getElementById('status-container');
+            let indicator = document.getElementById(`status-${network}`);
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = `status-${network}`;
+                container.appendChild(indicator);
+            }
             updateStatusIndicator(network, status, message);
         }
 
@@ -512,31 +505,29 @@
             if (!indicator) return;
 
             const statusClasses = {
-                connecting: 'bg-yellow-500 bg-opacity-20 text-yellow-300',
-                connected: 'bg-green-500 bg-opacity-20 text-green-300',
-                error: 'bg-red-500 bg-opacity-20 text-red-300',
-                disconnected: 'bg-gray-600 bg-opacity-20 text-gray-400',
-                idle: 'bg-gray-600 bg-opacity-20 text-gray-400'
+                connecting: 'bg-yellow-500/20 text-yellow-300',
+                connected: 'bg-green-500/20 text-green-300',
+                error: 'bg-red-500/20 text-red-300',
+                disconnected: 'bg-gray-600/20 text-gray-400',
+                idle: 'bg-gray-600/20 text-gray-400'
             };
-
             const statusIcons = {
-                connecting: '<div class="w-3 h-3 bg-yellow-400 rounded-full animate-pulse-fast"></div>',
-                connected: '<div class="w-3 h-3 bg-green-400 rounded-full"></div>',
-                error: '<div class="w-3 h-3 bg-red-400 rounded-full"></div>',
-                disconnected: '<div class="w-3 h-3 bg-gray-500 rounded-full"></div>',
-                idle: '<div class="w-3 h-3 bg-gray-500 rounded-full"></div>'
+                connecting: '<div class="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse"></div>',
+                connected: '<div class="w-2.5 h-2.5 bg-green-400 rounded-full"></div>',
+                error: '<div class="w-2.5 h-2.5 bg-red-400 rounded-full"></div>',
+                disconnected: '<div class="w-2.5 h-2.5 bg-gray-500 rounded-full"></div>',
+                idle: '<div class="w-2.5 h-2.5 bg-gray-500 rounded-full"></div>'
             }
             
-            indicator.className = `p-4 rounded-lg flex items-center transition-all duration-300 ${statusClasses[status] || statusClasses.idle}`;
+            indicator.className = `p-3 rounded-lg flex items-center transition-all duration-300 ${statusClasses[status] || statusClasses.idle}`;
             indicator.innerHTML = `
                 ${statusIcons[status] || statusIcons.idle}
                 <div class="ml-3">
-                    <p class="font-bold">${networkConfig[network].name}</p>
-                    <p class="text-sm">${message}</p>
+                    <p class="font-bold text-sm">${networkConfig[network].name}</p>
+                    <p class="text-xs">${message}</p>
                 </div>
             `;
         }
-
     </script>
 </body>
 </html>
